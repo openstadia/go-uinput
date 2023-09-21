@@ -28,6 +28,9 @@ func CreateDevice(
 	keyEvents []uint16,
 	absEvents []uint16,
 	relEvents []uint16,
+	absMax [64]int32,
+	absMin [64]int32,
+
 ) (*Device, error) {
 	err := ValidateDevicePath(path)
 	if err != nil {
@@ -66,7 +69,10 @@ func CreateDevice(
 				Bustype: BusUsb,
 				Vendor:  info.Vendor,
 				Product: info.Product,
-				Version: info.Vendor}})
+				Version: info.Vendor},
+			Absmax: absMax,
+			Absmin: absMin,
+		})
 	if err != nil {
 		return nil, err
 	}
