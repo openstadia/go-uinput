@@ -1,7 +1,34 @@
 package uinput
 
-// the constants that are defined here relate 1:1 to the constants defined in input.h and represent actual
-// key codes that can be triggered as key events
+// Event types
+const (
+	EvSyn      = 0x00
+	EvKey      = 0x01
+	EvRel      = 0x02
+	EvAbs      = 0x03
+	EvMsc      = 0x04
+	EvSw       = 0x05
+	EvLed      = 0x11
+	EvSnd      = 0x12
+	EvRep      = 0x14
+	EvFf       = 0x15
+	EvPwr      = 0x16
+	EvFfStatus = 0x17
+	EvMax      = 0x1f
+	EvCnt      = EvMax + 1
+)
+
+// Synchronization events
+const (
+	SynReport   = 0
+	SynConfig   = 1
+	SynMtReport = 2
+	SynDropped  = 3
+	SynMax      = 0xf
+	SynCnt      = SynMax + 1
+)
+
+// Keys and buttons
 const (
 	keyReserved         = 0
 	KeyEsc              = 1
@@ -271,4 +298,84 @@ const (
 	ButtonDpadRight = 0x223
 
 	ButtonMode = 0x13c // This is the special button that usually bears the Xbox or Playstation logo
+)
+
+const (
+	BtnMouse   = 0x110
+	BtnLeft    = 0x110
+	BtnRight   = 0x111
+	BtnMiddle  = 0x112
+	BtnSide    = 0x113
+	BtnExtra   = 0x114
+	BtnForward = 0x115
+	BtnBack    = 0x116
+	BtnTask    = 0x117
+)
+
+// Relative axes
+const (
+	RelX           = 0x00
+	RelY           = 0x01
+	RelZ           = 0x02
+	RelRx          = 0x03
+	RelRy          = 0x04
+	RelRz          = 0x05
+	RelHwheel      = 0x06
+	RelDial        = 0x07
+	RelWheel       = 0x08
+	RelMisc        = 0x09
+	RelReserved    = 0x0a
+	RelWheelHiRes  = 0x0b
+	RelHwheelHiRes = 0x0c
+	RelMax         = 0x0f
+	RelCnt         = RelMax + 1
+)
+
+// Absolute axes
+const (
+	AbsX             = 0x00
+	AbsY             = 0x01
+	AbsZ             = 0x02
+	AbsRx            = 0x03
+	AbsRy            = 0x04
+	AbsRz            = 0x05
+	AbsThrottle      = 0x06
+	AbsRudder        = 0x07
+	AbsWheel         = 0x08
+	AbsGas           = 0x09
+	AbsBrake         = 0x0a
+	AbsHat0x         = 0x10
+	AbsHat0y         = 0x11
+	AbsHat1x         = 0x12
+	AbsHat1y         = 0x13
+	AbsHat2x         = 0x14
+	AbsHat2y         = 0x15
+	AbsHat3x         = 0x16
+	AbsHat3y         = 0x17
+	AbsPressure      = 0x18
+	AbsDistance      = 0x19
+	AbsTiltX         = 0x1a
+	AbsTiltY         = 0x1b
+	AbsToolWidth     = 0x1c
+	AbsVolume        = 0x20
+	AbsProfile       = 0x21
+	AbsMisc          = 0x28
+	AbsReserved      = 0x2e
+	AbsMtSlot        = 0x2f /* MT slot being modified */
+	AbsMtTouchMajor  = 0x30 /* Major axis of touching ellipse */
+	AbsMtTouchMinor  = 0x31 /* Minor axis (omit if circular) */
+	AbsMtWidthMajor  = 0x32 /* Major axis of approaching ellipse */
+	AbsMtWidthMinor  = 0x33 /* Minor axis (omit if circular) */
+	AbsMtOrientation = 0x34 /* Ellipse orientation */
+	AbsMtPositionX   = 0x35 /* Center X touch position */
+	AbsMtPositionY   = 0x36 /* Center Y touch position */
+	AbsMtToolType    = 0x37 /* Type of touching device */
+	AbsMtBlobId      = 0x38 /* Group a set of packets as a blob */
+	AbsMtTrackingId  = 0x39 /* Unique ID of initiated contact */
+	AbsMtPressure    = 0x3a /* Pressure on contact area */
+	AbsMtDistance    = 0x3b /* Contact hover distance */
+	AbsMtToolX       = 0x3c /* Center X tool position */
+	AbsMtToolY       = 0x3d /* Center Y tool position */
+	AbsMax           = 0x3f
+	AbsCnt           = AbsMax + 1
 )

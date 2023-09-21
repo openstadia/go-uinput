@@ -11,9 +11,6 @@ import (
 	"unsafe"
 )
 
-type KeyEvent uint16
-type AbsEvent uint16
-
 type DeviceInfo struct {
 	Name    string
 	Vendor  uint16
@@ -21,16 +18,17 @@ type DeviceInfo struct {
 	Version uint16
 }
 
-type UinputDevice struct {
+type Device struct {
 	file *os.File
 }
 
-func CreateUinputDevice(
+func CreateDevice(
 	path string,
 	info DeviceInfo,
-	keyEvents []KeyEvent,
-	absEvents []AbsEvent,
-) (*UinputDevice, error) {
+	keyEvents []uint16,
+	absEvents []uint16,
+	relEvents []uint16,
+) (*Device, error) {
 	err := ValidateDevicePath(path)
 	if err != nil {
 		return nil, err
@@ -46,33 +44,19 @@ func CreateUinputDevice(
 		return nil, fmt.Errorf("failed to create virtual gamepad device: %v", err)
 	}
 
-	err = EnableDevice(deviceFile, uintptr(EvKey))
+	err = RegisterEvents(deviceFile, EvKey, UiSetKeyBit, keyEvents)
 	if err != nil {
-		_ = deviceFile.Close()
-		return nil, fmt.Errorf("failed to register virtual gamepad device: %v", err)
+		return nil, err
 	}
 
-	for _, code := range keyEvents {
-		err = Ioctl(deviceFile, UiSetKeyBit, uintptr(code))
-		if err != nil {
-			_ = deviceFile.Close()
-			return nil, fmt.Errorf("failed to register key number %d: %v", code, err)
-		}
-	}
-
-	// register absolute events
-	err = EnableDevice(deviceFile, uintptr(EvAbs))
+	err = RegisterEvents(deviceFile, EvAbs, UiSetAbsBit, absEvents)
 	if err != nil {
-		_ = deviceFile.Close()
-		return nil, fmt.Errorf("failed to register absolute event input device: %v", err)
+		return nil, err
 	}
 
-	for _, event := range absEvents {
-		err = Ioctl(deviceFile, UiSetAbsBit, uintptr(event))
-		if err != nil {
-			_ = deviceFile.Close()
-			return nil, fmt.Errorf("failed to register absolute event %v: %v", event, err)
-		}
+	err = RegisterEvents(deviceFile, EvRel, UiSetRelBit, relEvents)
+	if err != nil {
+		return nil, err
 	}
 
 	err = CreateUsbDevice(deviceFile,
@@ -87,9 +71,27 @@ func CreateUinputDevice(
 		return nil, err
 	}
 
-	return &UinputDevice{
+	return &Device{
 		file: deviceFile,
 	}, nil
+}
+
+func RegisterEvents(deviceFile *os.File, eventCode int, setBitCode int, events []uint16) error {
+	err := EnableDevice(deviceFile, uintptr(eventCode))
+	if err != nil {
+		_ = deviceFile.Close()
+		return fmt.Errorf("failed to register event input device: %v", err)
+	}
+
+	for _, event := range events {
+		err = Ioctl(deviceFile, uintptr(setBitCode), uintptr(event))
+		if err != nil {
+			_ = deviceFile.Close()
+			return fmt.Errorf("failed to register event %v: %v", event, err)
+		}
+	}
+
+	return nil
 }
 
 func ToUinputName(name string) [UinputMaxNameSize]byte {
@@ -143,12 +145,12 @@ func CreateUsbDevice(deviceFile *os.File, dev UinputUserDev) error {
 	return err
 }
 
-func (u *UinputDevice) CloseDevice() error {
-	err := ReleaseDevice(u.file)
+func (d *Device) CloseDevice() error {
+	err := ReleaseDevice(d.file)
 	if err != nil {
 		return fmt.Errorf("failed to close device: %v", err)
 	}
-	return u.file.Close()
+	return d.file.Close()
 }
 
 func ReleaseDevice(deviceFile *os.File) (err error) {
@@ -165,23 +167,23 @@ func fetchSyspath(deviceFile *os.File) (string, error) {
 	return sysInputDir, err
 }
 
-func (u *UinputDevice) SendKeyEvent(keyCode uint16, value int32) error {
-	return u.SendEvent(EvKey, keyCode, value)
+func (d *Device) SendKeyEvent(keyCode uint16, value int32) error {
+	return d.SendEvent(EvKey, keyCode, value)
 }
 
-func (u *UinputDevice) SendAbsEvent(absCode uint16, value int32) error {
-	return u.SendEvent(EvAbs, absCode, value)
+func (d *Device) SendAbsEvent(absCode uint16, value int32) error {
+	return d.SendEvent(EvAbs, absCode, value)
 }
 
-func (u *UinputDevice) SendRelEvent(relCode uint16, value int32) error {
-	return u.SendEvent(EvRel, relCode, value)
+func (d *Device) SendRelEvent(relCode uint16, value int32) error {
+	return d.SendEvent(EvRel, relCode, value)
 }
 
-func (u *UinputDevice) SendSyncEvent() error {
-	return u.SendEvent(EvSyn, SynReport, 0)
+func (d *Device) SendSyncEvent() error {
+	return d.SendEvent(EvSyn, SynReport, 0)
 }
 
-func (u *UinputDevice) SendEvent(eventType uint16, code uint16, value int32) error {
+func (d *Device) SendEvent(eventType uint16, code uint16, value int32) error {
 	buf, err := InputEventToBuffer(InputEvent{
 		Time:  syscall.Timeval{Sec: 0, Usec: 0},
 		Type:  eventType,
@@ -190,7 +192,7 @@ func (u *UinputDevice) SendEvent(eventType uint16, code uint16, value int32) err
 	if err != nil {
 		return fmt.Errorf("event could not be set: %v", err)
 	}
-	_, err = u.file.Write(buf)
+	_, err = d.file.Write(buf)
 	if err != nil {
 		return fmt.Errorf("writing event to the device file failed: %v", err)
 	}
